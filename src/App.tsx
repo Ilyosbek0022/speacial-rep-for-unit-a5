@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   CheckCircle2, 
@@ -21,6 +21,8 @@ import { TEST_DATA } from './constants';
 import { Section, UserAnswer } from './types';
 
 export default function App() {
+  const TEST_DURATION = 25 * 60; // 25 minutes in seconds
+const [timeLeft, setTimeLeft] = useState(TEST_DURATION);
   const [userName, setUserName] = useState('');
   const [isStarted, setIsStarted] = useState(false);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
@@ -46,7 +48,29 @@ export default function App() {
       setShowReview(true);
     }
   };
+useEffect(() => {
+  if (!isStarted || isFinished) return;
 
+  if (timeLeft <= 0) {
+    setIsFinished(true);
+    setShowReview(true);
+    return;
+  }
+
+  const timer = setInterval(() => {
+    setTimeLeft(prev => prev - 1);
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, [isStarted, timeLeft, isFinished]);
+
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs
+    .toString()
+    .padStart(2, '0')}`;
+};
   const handleBack = () => {
     if (currentSectionIndex > 0) {
       setCurrentSectionIndex(prev => prev - 1);
@@ -114,7 +138,9 @@ export default function App() {
 
   if (!isStarted) {
     return (
+      
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 font-sans">
+        
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -165,8 +191,7 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100"
-          >
-            <div className="bg-indigo-600 p-8 text-center text-white">
+          >   <div className="bg-indigo-600 p-8 text-center text-white">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -215,6 +240,7 @@ export default function App() {
 
                 {TEST_DATA.map((section, sIdx) => (
                   <div key={section.id} className="space-y-4">
+                    
                     <h3 className="font-bold text-indigo-600 uppercase tracking-wider text-sm">{section.title} - Section {sIdx + 1}</h3>
                     <div className="space-y-3">
                       {section.questions.map((q) => {
@@ -302,6 +328,16 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-4">
+            <div className=" sm:block text-right">
+  <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+    Time Left
+  </div>
+  <div className={`text-sm font-bold ${
+    timeLeft <= 60 ? 'text-rose-600 animate-pulse' : 'text-slate-700'
+  }`}>
+    {formatTime(timeLeft)}
+  </div>
+</div>
             <div className="hidden sm:block text-right">
               <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Progress</div>
               <div className="text-sm font-bold text-slate-700">{currentSectionIndex + 1} / {TEST_DATA.length}</div>
